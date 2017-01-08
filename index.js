@@ -7,14 +7,21 @@ const wget = require('node-wget');
 const async = require('async');
 const mkdirp = require('mkdirp');
 const shortid = require('shortid');
+const chalk = require('chalk');
+const log = console.log;
 
 const config = require('./config');
 const dbx = new Dropbox({
     accessToken: config.DROPBOX_TOKEN
 });
+const BIT_LY = 'http://bit.ly/';
 
-// TOOD: Make this a param
-var psp_tiny_url = 'http://bit.ly/2hRhWtC';
+// Validate the arguments
+const psp_tiny_url = process.argv[2];
+if (_.isEmpty(psp_tiny_url) || !_.startsWith(psp_tiny_url, BIT_LY)) {
+    throw new Error('Please pass a valid bit.ly url.');
+}
+
 var folder = _.trimStart(psp_tiny_url, 'http://bit.ly/');
 
 // Main entry point
@@ -23,6 +30,8 @@ async.auto({
     source_path: async.constant('./' + folder + '/source.html'),
     create_folder: async.apply(mkdirp, folder),
     get_picsshareparty_page: ['url', 'source_path', 'create_folder', (args, callback) => {
+        log(chalk.green('Downloading ' + args.url + '...'));
+
         wget({
                 url: args.url,
                 dest: args.source_path
@@ -37,6 +46,8 @@ async.auto({
         );
     }],
     parse_images: ['get_picsshareparty_page', (results, callback) => {
+        log(chalk.green('Parsing images...'));
+
         var $ = results.get_picsshareparty_page;
 
         // TODO: Better protection around refs
@@ -52,21 +63,29 @@ async.auto({
         fs.unlink(results.source_path, (err) => callback(err, _.uniq(images)));
     }],
     get_images: ['parse_images', (results, callback) => {
+        log(chalk.green('Downloading images...'));
+
         async.map(results.parse_images, getImage, callback);
     }],
     upload_images: ['get_images', (results, callback) => {
+        log(chalk.green('Uploading images...'));
+
         // Getting a 429 rate limit with map
         async.mapSeries(results.get_images, uploadImage, callback);
     }],
     delete_folder: ['upload_images', (results, callback) => {
+        log(chalk.green('Deleting temp folder...'));
+
         fs.rmdir(folder, callback);
     }]
 }, (err, results) => {
-    console.error('err = ', err);
-    console.log('results = ', results);
+    log(chalk.red.bold(err));
+    log(chalk.blue('Done.'));
 });
 
 function getImage(ref, callback) {
+    log(chalk.yellow(ref));
+
     wget({
             url: ref,
             dest: './' + folder + '/'
@@ -76,6 +95,8 @@ function getImage(ref, callback) {
 }
 
 function uploadImage(image, callback) {
+    log(chalk.yellow(image.filepath));
+
     fs.readFile(image.filepath, (err, contents) => {
         if (err) return callback(err);
 
