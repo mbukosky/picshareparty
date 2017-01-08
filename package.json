@@ -13,6 +13,8 @@
   "author": "Mike Bukosky <mbukosky@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "cheerio": "^0.22.0"
+    "axios": "^0.15.3",
+    "cheerio": "^0.22.0",
+    "lodash": "^4.17.4"
   }
 }
