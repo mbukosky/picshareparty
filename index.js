@@ -1,10 +1,12 @@
 const fs = require('fs');
+const util = require('util');
 const cheerio = require('cheerio');
 const _ = require('lodash');
 const Dropbox = require('dropbox');
 const wget = require('node-wget');
 const async = require('async');
 const mkdirp = require('mkdirp');
+const shortid = require('shortid');
 
 const config = require('./config');
 const dbx = new Dropbox({
@@ -73,16 +75,14 @@ function getImage(ref, callback) {
     );
 }
 
-//TODO: remove this count
-var count = 0;
-
 function uploadImage(image, callback) {
     fs.readFile(image.filepath, (err, contents) => {
         if (err) return callback(err);
-        //TODO: replace with string util
+
         var filename = _.split(image.headers['content-disposition'],  '"',  2)[1];
+        var path = util.format('/%s/%s-%s', folder, shortid.generate(), filename);
         dbx.filesUpload({
-                path: '/' + folder + '/' + (count++) + '-' + filename,
+                path: path,
                 contents: contents
             })
             .then((res) => fs.unlink(image.filepath, (err) => callback(err, res)))
