@@ -16,7 +16,7 @@ To install Node.js dependencies you're going to use npm again, in the applicatio
 
 `$ npm start http://bit.ly/2hRhWtC`
 
-## Configuration'
+## Configuration
 
 Create a `config.js` file in the root and add your dropbox token
 
